@@ -262,6 +262,32 @@ const Aura = ({ size = 220, o = 0.85, style }) => (
       radial-gradient(circle at 50% 70%, #8FCBA4 0%, transparent 55%)`, ...style }} />
 );
 
+// ─── Dr. Keret clinical badge ───────────────────────────────
+const DocBadge = ({ style }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #2B3A52",
+    background: "rgba(231,190,99,0.05)", borderRadius: 16, padding: "12px 15px", ...style }}>
+    <div style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "flex",
+      alignItems: "center", justifyContent: "center", border: `1.5px solid ${C.hi}66`,
+      background: "rgba(231,190,99,0.10)" }}>
+      <Stethoscope size={18} color={C.hi} />
+    </div>
+    <div>
+      <div style={{ fontFamily: SERIF, fontSize: 14.5, fontWeight: 700, color: C.ink }}>בליווי קליני של ד״ר דן קרת</div>
+      <div style={{ fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 1.5 }}>
+        הטווחים, הטיפים והתובנות באפליקציה נקבעים ומאושרים על ידו</div>
+    </div>
+  </div>
+);
+
+// רשימת הבדיקות המומלצות למי שעוד אין לו תוצאות ביד
+const TEST_LIST = {
+  base: ["גלוקוז בצום", "המוגלובין מסוכרר (HbA1c)", "פרופיל שומנים מלא",
+    "תפקודי כבד (ALT, AST, GGT)", "קריאטינין ותפקודי כליה", "ספירת דם מלאה",
+    "TSH (בלוטת התריס)", "ויטמין D", "B12", "פריטין", "חומצה אורית", "hs-CRP (דלקת)"],
+  extra: ["אינסולין בצום - מאפשר לחשב תנגודת אינסולין", "ApoB - מנבא סיכון לבבי מדויק יותר מ-LDL",
+    "Lp(a) - מספיק פעם אחת בחיים"],
+};
+
 // ─── Data (unchanged from v3) ───────────────────────────────
 let MARKERS = [
   { code: "apob", he: "ApoB", cat: "לב וכלי דם", unit: "mg/dL", optMax: 60, stdMax: 130,
@@ -543,7 +569,7 @@ async function loadLive() {
   }));
   if (liveTips.length) TIPS = liveTips;
   PROFILE = { id: user.id, sex, name: pf.data?.name || (user.email || "").split("@")[0],
-    streak: pf.data?.streak_days ?? 0 };
+    streak: pf.data?.streak_days ?? 0, onboarded: !!(pf.data?.name && pf.data?.sex) };
   HABITS_TODAY = {};
   (hl.data || []).forEach((h) => { HABITS_TODAY[h.habit] = +h.value; });
   LIVE = true;
@@ -836,11 +862,36 @@ const BrandLockup = ({ dark }) => (
   </div>
 );
 function EmptyHome({ goTo }) {
+  const [guide, setGuide] = useState(false);
+  const [remDate, setRemDate] = useState(() => new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+  const [copied, setCopied] = useState(false);
+  const [remAdded, setRemAdded] = useState(false);
   const n = PENDING_MARKERS.length;
+  const copyList = () => {
+    const txt = "בדיקות דם - אופטימל\n\nפאנל בסיס:\n" + TEST_LIST.base.map((t) => "· " + t).join("\n") +
+      "\n\nשווה לבקש במיוחד:\n" + TEST_LIST.extra.map((t) => "· " + t).join("\n");
+    navigator.clipboard?.writeText(txt).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
+  };
+  const addReminder = () => {
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Optimal//HE", "BEGIN:VEVENT",
+      "UID:optimal-" + Date.now() + "@optimal", "DTSTART;VALUE=DATE:" + remDate.replace(/-/g, ""),
+      "SUMMARY:בדיקות דם - ואז להעלות לאופטימל",
+      "DESCRIPTION:צום 10-12 שעות לפני (מים מותר). אחרי קבלת התוצאות - לצלם ולהעלות לאופטימל.",
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    const a = document.createElement("a");
+    a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+    a.download = "optimal-reminder.ics"; a.click();
+    setRemAdded(true); setTimeout(() => setRemAdded(false), 2600);
+  };
+  const StepN = ({ n: num }) => (
+    <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center",
+      justifyContent: "center", border: `1.5px solid ${C.hi}66`, background: "rgba(231,190,99,0.10)",
+      color: C.hi, fontSize: 13, fontWeight: 700, fontFamily: SERIF }}>{num}</div>
+  );
   return (
     <div className="fadeIn">
       <div style={{ background: "linear-gradient(168deg, #192B4A 0%, #101B31 55%, #0C1424 100%)",
-        margin: "-18px -16px 0", padding: "26px 22px 40px", borderRadius: "0 0 30px 30px",
+        margin: "-18px -16px 0", padding: "26px 22px 34px", borderRadius: "0 0 30px 30px",
         position: "relative", overflow: "hidden", color: "#fff" }}>
         <Aura style={{ top: -40, left: -30 }} o={0.5} size={260} />
         <div style={{ position: "relative" }}>
@@ -850,33 +901,111 @@ function EmptyHome({ goTo }) {
               style={{ background: "none", border: "none", cursor: "pointer", color: "#8FA0B3", padding: 4 }}>
               <LogOut size={17} /></button>}
           </div>
-          <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, margin: "26px 0 0", lineHeight: 1.35 }}>
-            שלום {PROFILE?.name || ""},<br />בוא נבנה את <span style={{ color: C.hi }}>תמונת הבריאות</span> שלך
-          </h1>
-          <div style={{ fontSize: 13.5, color: "#B9C4D2", marginTop: 10, lineHeight: 1.65 }}>
-            צלם את דף תוצאות הדם האחרון שלך מהקופה - והמערכת תזהה את המדדים, תציב אותם מול הטווחים המיטביים ותראה לך בדיוק איפה אתה עומד.
-          </div>
-          <button onClick={() => goTo("upload")} style={{ ...btn(), marginTop: 18, padding: "13px 22px", fontSize: 14.5 }}>
-            <Camera size={17} /> צלם את הבדיקה הראשונה</button>
+          {!guide ? (
+            <>
+              <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, margin: "26px 0 0", lineHeight: 1.35 }}>
+                שלום {PROFILE?.name || ""},<br />בוא נבנה את <span style={{ color: C.hi }}>תמונת הבריאות</span> שלך
+              </h1>
+              <div style={{ fontSize: 13.5, color: "#B9C4D2", marginTop: 10, lineHeight: 1.65 }}>
+                המערכת מזהה את המדדים מצילום של דף התוצאות, מציבה אותם מול הטווחים המיטביים - ומראה לך בדיוק איפה אתה עומד.
+              </div>
+              <button onClick={() => goTo("upload")}
+                style={{ ...btn(), width: "100%", marginTop: 18, padding: "13px 0", fontSize: 14.5 }}>
+                <Camera size={17} /> יש לי תוצאות - אני מצלם עכשיו</button>
+              <button onClick={() => setGuide(true)}
+                style={{ ...btn(true), width: "100%", marginTop: 10, padding: "12px 0", fontSize: 14,
+                  borderColor: "#33445A", color: "#D7DEE8" }}>
+                עוד אין לי תוצאות - מה עושים?</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setGuide(false)} style={{ background: "none", border: "none", cursor: "pointer",
+                color: "#8FA0B3", fontSize: 12.5, fontFamily: "inherit", padding: 0, marginTop: 20,
+                display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <ArrowRight size={14} /> חזרה</button>
+              <h1 style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 700, margin: "12px 0 0", lineHeight: 1.4 }}>
+                שלושה צעדים פשוטים -<br />ו<span style={{ color: C.hi }}>תמונת הבריאות</span> שלך בדרך
+              </h1>
+            </>
+          )}
         </div>
       </div>
-      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-        <Card style={{ padding: "15px 18px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Ph name="stethoscope" size={20} color={C.hi} />
-            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
-              <b style={{ color: C.ink }}>{n || 23} מדדים כבר מחכים לך</b> - כל אחד עם טווח מיטבי, הסבר, ודרכי שיפור שנקבעו בידי הסמכות הקלינית של אופטימל</div>
-          </div>
-        </Card>
-        <Card style={{ padding: "15px 18px" }} onClick={() => goTo("tips")}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Ph name="lightbulb" size={20} color={C.hi} />
-            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft, flex: 1 }}>
-              <b style={{ color: C.ink }}>הטיפים כבר פתוחים</b> - אפשר להתחיל לקרוא עוד לפני ההעלאה הראשונה</div>
-            <ChevronLeft size={16} color={C.muted} />
-          </div>
-        </Card>
-      </div>
+      {!guide ? (
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <Card style={{ padding: "15px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Ph name="stethoscope" size={20} color={C.hi} />
+              <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
+                <b style={{ color: C.ink }}>{n || 23} מדדים כבר מחכים לך</b> - כל אחד עם טווח מיטבי, הסבר ודרכי שיפור, בליווי קליני של ד״ר דן קרת</div>
+            </div>
+          </Card>
+          <Card style={{ padding: "15px 18px" }} onClick={() => goTo("tips")}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Ph name="lightbulb" size={20} color={C.hi} />
+              <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft, flex: 1 }}>
+                <b style={{ color: C.ink }}>הטיפים כבר פתוחים</b> - אפשר להתחיל לקרוא עוד לפני ההעלאה הראשונה</div>
+              <ChevronLeft size={16} color={C.muted} />
+            </div>
+          </Card>
+        </div>
+      ) : (
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }} className="fadeIn">
+          <Card style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", gap: 12 }}>
+              <StepN n="1" />
+              <div style={{ fontSize: 13.5, lineHeight: 1.65, color: C.soft }}>
+                <b style={{ color: C.ink }}>קובעים תור לבדיקות דם</b> - באפליקציה של הקופה או במוקד. עדיף תור בוקר,
+                אחרי צום של 10-12 שעות (מים זה בסדר גמור).</div>
+            </div>
+          </Card>
+          <Card style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", gap: 12 }}>
+              <StepN n="2" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
+                  <b style={{ color: C.ink }}>מבקשים מהרופא הפניה לבדיקות האלה</b> - רובן בפאנל השגרתי:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 11 }}>
+                  {TEST_LIST.base.map((t) => (
+                    <span key={t} style={{ fontSize: 11.5, color: C.soft, border: `1px solid ${C.line}`,
+                      borderRadius: 20, padding: "4px 10px" }}>{t}</span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: C.hi, margin: "13px 0 7px" }}>שווה לבקש במיוחד:</div>
+                {TEST_LIST.extra.map((t) => (
+                  <div key={t} style={{ fontSize: 12.5, color: C.soft, lineHeight: 1.7 }}>· {t}</div>
+                ))}
+                <button onClick={copyList} style={{ ...btn(true, true), marginTop: 13 }}>
+                  <Ph name={copied ? "check" : "copy"} size={14} /> {copied ? "הועתק - אפשר להדביק ולשמור" : "העתק את הרשימה"}</button>
+              </div>
+            </div>
+          </Card>
+          <Card style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", gap: 12 }}>
+              <StepN n="3" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
+                  <b style={{ color: C.ink }}>קובעים תזכורת</b> - וכשהתוצאות יגיעו, מצלמים אותן כאן והמערכת עושה את השאר.</div>
+                <div style={{ display: "flex", gap: 9, marginTop: 12, alignItems: "center" }}>
+                  <input type="date" value={remDate} onChange={(e) => setRemDate(e.target.value)}
+                    style={{ background: C.paper, border: `1.5px solid ${C.line}`, borderRadius: 12,
+                      padding: "9px 12px", fontSize: 13, color: C.ink, fontFamily: "inherit", outline: "none",
+                      colorScheme: "dark" }} />
+                  <button onClick={addReminder} style={{ ...btn(false, true), whiteSpace: "nowrap" }}>
+                    <Ph name={remAdded ? "check" : "calendar-plus"} size={14} /> {remAdded ? "נשמר ליומן" : "תזכורת ליומן"}</button>
+                </div>
+              </div>
+            </div>
+          </Card>
+          <Card style={{ padding: "15px 18px" }} onClick={() => goTo("tips")}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Ph name="lightbulb" size={20} color={C.hi} />
+              <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft, flex: 1 }}>
+                <b style={{ color: C.ink }}>ובינתיים - הטיפים כבר פתוחים</b> - כך שיש ערך כבר מהיום הראשון</div>
+              <ChevronLeft size={16} color={C.muted} />
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -1573,10 +1702,13 @@ const nightBg = {
 function Splash({ text }) {
   return (
     <div dir="rtl" style={nightBg}>
-      <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column",
+      <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", position: "relative",
         alignItems: "center", justifyContent: "center", gap: 18, minHeight: "100vh" }}>
         <div style={{ animation: "pulse 1.6s ease-in-out infinite" }}><BrandLockup dark /></div>
         {text && <div style={{ fontSize: 13.5, color: C.muted }}>{text}</div>}
+        <div style={{ position: "absolute", bottom: 36, display: "flex", alignItems: "center", gap: 7,
+          fontSize: 12, color: C.muted }}>
+          <Stethoscope size={13} color={C.hi} /> בליווי קליני של ד״ר דן קרת</div>
       </div>
     </div>
   );
@@ -1616,8 +1748,9 @@ function Auth({ onDemo }) {
           <h1 style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 700, textAlign: "center",
             margin: "0 0 8px", lineHeight: 1.35 }}>
             הבריאות שלך,<br /><span style={{ color: C.hi }}>שנים קדימה</span></h1>
-          <p style={{ textAlign: "center", color: C.muted, fontSize: 13.5, lineHeight: 1.65, margin: "0 0 28px" }}>
+          <p style={{ textAlign: "center", color: C.muted, fontSize: 13.5, lineHeight: 1.65, margin: "0 0 16px" }}>
             מעקב רב-שנתי אחרי בדיקות הדם שלך, מול הטווחים המיטביים - לא רק טווחי המעבדה.</p>
+          <DocBadge style={{ margin: "0 0 24px" }} />
           {stage === "email" ? (
             <div className="fadeIn">
               <input style={{ ...input, direction: "ltr" }} type="email" inputMode="email" placeholder="המייל שלך"
@@ -1656,10 +1789,74 @@ function Auth({ onDemo }) {
     </div>
   );
 }
+function Onboarding({ onDone }) {
+  const [name, setName] = useState("");
+  const [sex, setSex] = useState(null);
+  const [year, setYear] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+  const input = {
+    width: "100%", boxSizing: "border-box", background: C.card, border: `1.5px solid ${C.line}`,
+    borderRadius: 14, padding: "13px 16px", fontSize: 15, color: C.ink, fontFamily: "inherit",
+    outline: "none",
+  };
+  const ok = name.trim().length >= 2 && !!sex;
+  const save = async () => {
+    if (!ok || busy) return;
+    setBusy(true); setErr(null);
+    const patch = { name: name.trim(), sex };
+    const y = parseInt(year, 10);
+    if (y >= 1920 && y <= 2015) patch.birth_year = y;
+    const { error } = await sb.from("profiles").update(patch).eq("id", PROFILE.id);
+    if (error) { setBusy(false); setErr("השמירה לא הצליחה - נסה שוב"); return; }
+    try { await loadLive(); } catch (e) { console.warn("reload failed", e); }
+    onDone();
+  };
+  const lbl = { fontSize: 12.5, fontWeight: 600, color: C.soft, marginBottom: 7 };
+  return (
+    <div dir="rtl" style={nightBg}>
+      <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", display: "flex", flexDirection: "column",
+        justifyContent: "center", padding: "40px 26px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
+        <Aura style={{ top: -60, left: -40 }} o={0.4} size={280} />
+        <div style={{ position: "relative" }} className="fadeIn">
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}><BrandLockup dark /></div>
+          <h1 style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 700, textAlign: "center", margin: "0 0 8px" }}>
+            נעים להכיר</h1>
+          <p style={{ textAlign: "center", color: C.muted, fontSize: 13.5, lineHeight: 1.65, margin: "0 0 26px" }}>
+            כמה פרטים קצרים - כדי שהטווחים המיטביים יותאמו בדיוק אליך.</p>
+          <div style={lbl}>איך קוראים לך?</div>
+          <input style={input} value={name} placeholder="השם הפרטי שלך"
+            onChange={(e) => setName(e.target.value)} />
+          <div style={{ ...lbl, margin: "18px 0 7px" }}>מין
+            <span style={{ fontWeight: 400, color: C.muted }}> · חלק מהטווחים המיטביים שונים בין גברים לנשים</span></div>
+          <div style={{ display: "flex", gap: 10 }}>
+            {[["m", "גבר"], ["f", "אישה"]].map(([v, t]) => (
+              <button key={v} onClick={() => setSex(v)} style={{ flex: 1, padding: "12px 0", borderRadius: 14,
+                fontFamily: "inherit", fontSize: 14.5, fontWeight: 600, cursor: "pointer",
+                border: sex === v ? `1.5px solid ${C.hi}` : `1.5px solid ${C.line}`,
+                background: sex === v ? "rgba(231,190,99,0.12)" : C.card,
+                color: sex === v ? C.hi : C.soft }}>{t}</button>
+            ))}
+          </div>
+          <div style={{ ...lbl, margin: "18px 0 7px" }}>שנת לידה
+            <span style={{ fontWeight: 400, color: C.muted }}> · לא חובה</span></div>
+          <input style={{ ...input, direction: "ltr", textAlign: "center" }} inputMode="numeric" maxLength={4}
+            placeholder="1989" value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} />
+          <button onClick={save} disabled={!ok || busy}
+            style={{ ...btn(), width: "100%", marginTop: 24, padding: "13px 0", fontSize: 15,
+              opacity: !ok || busy ? 0.55 : 1 }}>{busy ? "שומר..." : "ממשיכים"}</button>
+          {err && <div style={{ textAlign: "center", color: C.alert, fontSize: 13, marginTop: 12 }}>{err}</div>}
+          <div style={{ marginTop: 26 }}><DocBadge /></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function Root() {
   const [session, setSession] = useState(undefined);
   const [mode, setMode] = useState(sb ? null : "demo");
   const [ready, setReady] = useState(false);
+  const [obDone, setObDone] = useState(false);
   const [loadErr, setLoadErr] = useState(false);
   useEffect(() => {
     if (!sb) return;
@@ -1687,6 +1884,7 @@ function Root() {
     </div>
   );
   if (!ready) return <Splash text="טוען את הנתונים שלך..." />;
+  if (PROFILE && !PROFILE.onboarded && !obDone) return <Onboarding onDone={() => setObDone(true)} />;
   return <App />;
 }
 
