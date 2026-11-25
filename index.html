@@ -895,11 +895,21 @@ function EmptyHome({ goTo }) {
       "\n\nבדרך כלל פרטי (לא חובה עכשיו):\n" + TEST_LIST.priv.map((t) => "· " + t).join("\n");
     navigator.clipboard?.writeText(txt).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
   };
+  const REM_TITLE = "בדיקות דם - ואז להעלות לאופטימל";
+  const REM_DESC = "צום 10-12 שעות לפני (מים מותר). אחרי קבלת התוצאות - לצלם ולהעלות לאופטימל.";
+  const openGcal = () => {
+    const d = remDate.replace(/-/g, "");
+    const end = new Date(new Date(remDate + "T00:00:00").getTime() + 86400000)
+      .toISOString().slice(0, 10).replace(/-/g, "");
+    window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text=" +
+      encodeURIComponent(REM_TITLE) + "&dates=" + d + "/" + end +
+      "&details=" + encodeURIComponent(REM_DESC), "_blank", "noopener");
+  };
   const addReminder = () => {
     const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Optimal//HE", "BEGIN:VEVENT",
       "UID:optimal-" + Date.now() + "@optimal", "DTSTART;VALUE=DATE:" + remDate.replace(/-/g, ""),
-      "SUMMARY:בדיקות דם - ואז להעלות לאופטימל",
-      "DESCRIPTION:צום 10-12 שעות לפני (מים מותר). אחרי קבלת התוצאות - לצלם ולהעלות לאופטימל.",
+      "SUMMARY:" + REM_TITLE,
+      "DESCRIPTION:" + REM_DESC,
       "END:VEVENT", "END:VCALENDAR"].join("\r\n");
     const a = document.createElement("a");
     a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
@@ -976,9 +986,22 @@ function EmptyHome({ goTo }) {
           <Card style={{ padding: "16px 18px" }}>
             <div style={{ display: "flex", gap: 12 }}>
               <StepN n="1" />
-              <div style={{ fontSize: 13.5, lineHeight: 1.65, color: C.soft }}>
-                <b style={{ color: C.ink }}>קובעים תור לבדיקות דם</b> - באפליקציה של הקופה או במוקד. עדיף תור בוקר,
-                אחרי צום של 10-12 שעות (מים זה בסדר גמור).</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, lineHeight: 1.65, color: C.soft }}>
+                  <b style={{ color: C.ink }}>קובעים תור לבדיקות דם</b> - באפליקציה של הקופה או במוקד. עדיף תור בוקר,
+                  אחרי צום של 10-12 שעות (מים זה בסדר גמור).</div>
+                <div style={{ fontSize: 12, color: C.muted, margin: "11px 0 6px" }}>קיצור דרך לקופה שלך:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {[["כללית", "https://www.clalit.co.il"], ["מכבי", "https://www.maccabi4u.co.il"],
+                    ["מאוחדת", "https://www.meuhedet.co.il"], ["לאומית", "https://www.leumit.co.il"]].map(([nm, url]) => (
+                    <a key={nm} href={url} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 12.5, fontWeight: 600, color: C.hi, textDecoration: "none",
+                        border: `1px solid ${C.hi}55`, background: "rgba(62,201,184,0.08)",
+                        borderRadius: 20, padding: "6px 14px", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      {nm}</a>
+                  ))}
+                </div>
+              </div>
             </div>
           </Card>
           <Card style={{ padding: "16px 18px" }}>
@@ -1016,14 +1039,18 @@ function EmptyHome({ goTo }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
                   <b style={{ color: C.ink }}>קובעים תזכורת</b> - וכשהתוצאות יגיעו, מצלמים אותן כאן והמערכת עושה את השאר.</div>
-                <div style={{ display: "flex", gap: 9, marginTop: 12, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 9, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <input type="date" value={remDate} onChange={(e) => setRemDate(e.target.value)}
                     style={{ background: C.paper, border: `1.5px solid ${C.line}`, borderRadius: 12,
                       padding: "9px 12px", fontSize: 16, color: C.ink, fontFamily: "inherit", outline: "none",
                       colorScheme: "dark" }} />
-                  <button onClick={addReminder} style={{ ...btn(false, true), whiteSpace: "nowrap" }}>
-                    <Ph name={remAdded ? "check" : "calendar-plus"} size={14} /> {remAdded ? "נשמר ליומן" : "תזכורת ליומן"}</button>
+                  <button onClick={openGcal} style={{ ...btn(false, true), whiteSpace: "nowrap" }}>
+                    <Ph name="calendar-plus" size={14} /> הוסף ליומן Google</button>
                 </div>
+                <button onClick={addReminder} style={{ background: "none", border: "none", cursor: "pointer",
+                  color: C.muted, fontSize: 12, fontFamily: "inherit", padding: 0, marginTop: 9,
+                  textDecoration: "underline" }}>
+                  {remAdded ? "הקובץ ירד - פתח אותו והאירוע ייכנס ליומן" : "משתמש ביומן של אפל או Outlook? לחץ כאן"}</button>
               </div>
             </div>
           </Card>
