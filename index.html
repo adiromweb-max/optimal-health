@@ -992,8 +992,10 @@ function EmptyHome({ goTo }) {
                   אחרי צום של 10-12 שעות (מים זה בסדר גמור).</div>
                 <div style={{ fontSize: 12, color: C.muted, margin: "11px 0 6px" }}>קיצור דרך לקופה שלך:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                  {[["כללית", "https://www.clalit.co.il"], ["מכבי", "https://www.maccabi4u.co.il"],
-                    ["מאוחדת", "https://www.meuhedet.co.il"], ["לאומית", "https://www.leumit.co.il"]].map(([nm, url]) => (
+                  {[["כללית", "https://e-services.clalit.co.il/OnlineWeb/General/Login.aspx"],
+                    ["מכבי", "https://online.maccabi4u.co.il/"],
+                    ["מאוחדת", "https://online.meuhedet.co.il/"],
+                    ["לאומית", "https://online.leumit.co.il/"]].map(([nm, url]) => (
                     <a key={nm} href={url} target="_blank" rel="noopener noreferrer"
                       style={{ fontSize: 12.5, fontWeight: 600, color: C.hi, textDecoration: "none",
                         border: `1px solid ${C.hi}55`, background: "rgba(62,201,184,0.08)",
