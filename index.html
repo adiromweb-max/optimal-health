@@ -1442,6 +1442,7 @@ function Markers({ selected, setSelected, goTo }) {
     <div className="fadeIn">
       <Label style={{ marginTop: 4 }}>{MARKERS.length} מדדים במעקב{MARKERS.some((m) => m.computed) ? " · אחד מחושב אוטומטית" : ""}</Label>
       <h2 style={{ fontFamily: SERIF, fontSize: 27, margin: "6px 0 16px" }}>המדדים שלי</h2>
+      <div className="catGrid">
       {cats.map((cat) => {
         return (
           <div key={cat} style={{ marginBottom: 16 }}>
@@ -1488,6 +1489,7 @@ function Markers({ selected, setSelected, goTo }) {
           </Card>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1751,13 +1753,13 @@ function Tips() {
     <div className="fadeIn">
       <Label style={{ marginTop: 4 }}>נכתב לפי הנתונים שלך</Label>
       <h2 style={{ fontFamily: SERIF, fontSize: 27, margin: "6px 0 14px" }}>טיפים</h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <div className="tipGrid tipGridHero" style={{ display: "flex", flexDirection: "column", gap: 11 }}>
         <TipCard t={forYou[0]} hero />
         {forYou.slice(1).map((t) => <TipCard key={t.id} t={t} />)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 12px" }}>
         <Label>מהשבוע</Label><div style={{ flex: 1, height: 1, background: C.line }} /></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <div className="tipGrid" style={{ display: "flex", flexDirection: "column", gap: 11 }}>
         {weekly.map((t) => <TipCard key={t.id} t={t} />)}</div>
     </div>
   );
@@ -2295,6 +2297,9 @@ function App({ demoBanner, admin }) {
         @media (min-width: 1060px) {
           .homeCards { display: grid; grid-template-columns: 1fr 1fr; align-items: start }
           .homeCards > :first-child { grid-column: 1 / -1 }
+          .catGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start }
+          .tipGrid { display: grid !important; grid-template-columns: 1fr 1fr; align-items: stretch }
+          .tipGridHero > :first-child { grid-column: 1 / -1 }
           .helpWrap { background: rgba(6,11,20,.62) !important; backdrop-filter: blur(6px); align-items: center }
           .helpCard { max-height: min(78vh, 680px); border-radius: 24px; border: 1px solid ${C.line}; max-width: 460px !important }
         }`}</style>
