@@ -1920,10 +1920,92 @@ function Root() {
   return <App />;
 }
 
+// ─── Help assistant (in-app support chat) ───────────────────
+function HelpChat({ onClose }) {
+  const [msgs, setMsgs] = useState([
+    { role: "assistant", content: "שלום! אני העוזר של אופטימל. אפשר לשאול אותי כל דבר על האפליקציה - איך מעלים, אילו בדיקות כדאי, מה אומרים הטווחים ועוד." },
+  ]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const boxRef = React.useRef(null);
+  useEffect(() => { boxRef.current && (boxRef.current.scrollTop = 1e6); }, [msgs, busy]);
+  const QUICK = ["איך מעלים בדיקה?", "אילו בדיקות כדאי לעשות?", "לא קיבלתי קוד למייל", "מה זה הטווח המיטבי?"];
+  const send = async (text) => {
+    const t = (text ?? input).trim();
+    if (!t || busy) return;
+    const next = [...msgs, { role: "user", content: t }];
+    setMsgs(next); setInput(""); setBusy(true);
+    let reply;
+    if (!LIVE || !sb) {
+      reply = "במצב הדגמה העוזר נח. היכנס עם המייל שלך - ושם אני עונה על הכל.";
+    } else {
+      try {
+        const { data, error } = await sb.functions.invoke("assistant", { body: { messages: next } });
+        if (error) {
+          let m = null;
+          try { m = (await error.context?.json())?.msg; } catch {}
+          reply = m || "משהו השתבש - נסה שוב בעוד רגע.";
+        } else reply = data?.answer || "משהו השתבש - נסה שוב בעוד רגע.";
+      } catch { reply = "משהו השתבש - נסה שוב בעוד רגע."; }
+    }
+    setMsgs((cur) => [...cur, { role: "assistant", content: reply }]);
+    setBusy(false);
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", justifyContent: "center",
+      background: C.bg }} dir="rtl">
+      <div className="fadeIn" style={{ width: "100%", maxWidth: 420, background: C.paper, display: "flex",
+        flexDirection: "column", height: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "15px 18px", borderBottom: `1px solid ${C.hair}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <Ph name="chat-circle-dots" size={19} color={C.hi} />
+            <div style={{ fontWeight: 700, fontSize: 15 }}>העוזר של אופטימל</div>
+          </div>
+          <button onClick={onClose} aria-label="סגירה" style={{ background: "none", border: "none",
+            cursor: "pointer", color: C.muted, padding: 4 }}><Ph name="x" size={19} /></button>
+        </div>
+        <div ref={boxRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px",
+          display: "flex", flexDirection: "column", gap: 10 }}>
+          {msgs.map((m, i) => (
+            <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "85%", borderRadius: 16, padding: "10px 14px", fontSize: 14, lineHeight: 1.65,
+              whiteSpace: "pre-wrap",
+              background: m.role === "user" ? "rgba(62,201,184,0.14)" : C.card,
+              border: m.role === "user" ? `1px solid ${C.hi}33` : `1px solid ${C.line}`,
+              color: C.ink }}>{m.content}</div>
+          ))}
+          {busy && <div style={{ alignSelf: "flex-start", color: C.muted, fontSize: 13, padding: "4px 6px" }}
+            className="glowPulse">חושב...</div>}
+          {msgs.length <= 1 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 4 }}>
+              {QUICK.map((q) => (
+                <button key={q} onClick={() => send(q)} style={{ ...btn(true, true), fontSize: 12.5 }}>{q}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 9, padding: "12px 16px 20px", borderTop: `1px solid ${C.hair}` }}>
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="כתוב שאלה..."
+            onKeyDown={(e) => e.key === "Enter" && send()}
+            style={{ flex: 1, background: C.card, border: `1.5px solid ${C.line}`, borderRadius: 22,
+              padding: "11px 16px", fontSize: 16, color: C.ink, fontFamily: "inherit", outline: "none" }} />
+          <button onClick={() => send()} disabled={busy || !input.trim()} aria-label="שליחה"
+            style={{ width: 46, height: 46, borderRadius: 23, border: "none", cursor: "pointer",
+              background: C.hi, display: "flex", alignItems: "center", justifyContent: "center",
+              opacity: busy || !input.trim() ? 0.55 : 1 }}>
+            <Ph name="paper-plane-tilt" size={19} color="#0A2620" /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Shell ──────────────────────────────────────────────────
 function App({ demoBanner }) {
   const [tab, setTab] = useState("home");
   const [selMarker, setSelMarker] = useState(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   const goTo = (t, marker) => { setTab(t); setSelMarker(marker ?? null); };
   const tabs = [
     { id: "home", label: "בית", ph: "house" },
@@ -1961,6 +2043,15 @@ function App({ demoBanner }) {
           {tab === "habits" && <Habits goTo={goTo} />}
           {tab === "tips" && <Tips />}
         </main>
+        {!helpOpen && (
+          <button onClick={() => setHelpOpen(true)} aria-label="עזרה"
+            style={{ position: "fixed", bottom: 96, insetInlineStart: "max(14px, calc(50% - 196px))",
+              zIndex: 40, width: 42, height: 42, borderRadius: 21, background: C.card,
+              border: `1px solid ${C.line}`, boxShadow: SH, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ph name="chat-circle-dots" size={20} color={C.hi} /></button>
+        )}
+        {helpOpen && <HelpChat onClose={() => setHelpOpen(false)} />}
         <nav style={{ position: "fixed", bottom: 0, width: "100%", maxWidth: 420, background: "rgba(12,19,32,.94)",
           backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`, display: "flex", padding: "9px 0 17px" }}>
           {tabs.map(({ id, label, ph }) => id === "upload" ? (
@@ -1970,7 +2061,7 @@ function App({ demoBanner }) {
                 color: tab === id ? C.hi : C.muted, fontWeight: tab === id ? 700 : 500 }}>
               <div style={{ width: 52, height: 52, borderRadius: 26, marginTop: -31,
                 background: "linear-gradient(140deg, #5BD6E0 0%, #2EC49A 55%, #1C8A72 100%)",
-                boxShadow: "0 7px 18px rgba(214,167,66,.38), 0 0 0 5px #0C1320",
+                boxShadow: "0 7px 18px rgba(46,196,154,.35), 0 0 0 5px #0C1320",
                 display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Ph name={ph} size={25} color="#17202F" />
               </div>
