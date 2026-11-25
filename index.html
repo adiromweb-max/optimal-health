@@ -1132,7 +1132,7 @@ function Home({ goTo }) {
       </div>
 
       {/* Overlapping cards */}
-      <div style={{ marginTop: -34, position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="homeCards">
         <Card style={{ padding: "15px 18px 12px" }}>
           <Label>תמונת מצב לפי מערכות</Label>
           <div style={{ display: "flex", gap: 15, overflowX: "auto", paddingTop: 12, paddingBottom: 3 }}>
@@ -1196,17 +1196,12 @@ function Home({ goTo }) {
             <Calendar size={20} color={C.muted} />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
-            <button style={btn(false, true)} onClick={() => {
-              const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Optimal//He//", "BEGIN:VEVENT",
-                "UID:optimal-" + Date.now() + "@optimal", "DTSTART;VALUE=DATE:20261126",
-                "SUMMARY:בדיקות דם תקופתיות - אופטימל",
-                "DESCRIPTION:לקבוע תור לרופא להפניה. רשימת הבדיקות המלאה מחכה באפליקציה.",
-                "BEGIN:VALARM", "TRIGGER:-P7D", "ACTION:DISPLAY", "DESCRIPTION:שבוע לבדיקות - לקבוע תור", "END:VALARM",
-                "END:VEVENT", "END:VCALENDAR"].join("\r\n");
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-              a.download = "optimal-blood-test.ics"; a.click(); URL.revokeObjectURL(a.href);
-            }}><Calendar size={14} /> הוסף ליומן</button>
+            <button style={btn(false, true)} onClick={() => window.open(
+              "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" +
+              encodeURIComponent("בדיקות דם תקופתיות - אופטימל") +
+              "&dates=20261126/20261127&details=" +
+              encodeURIComponent("לקבוע תור לרופא להפניה. רשימת הבדיקות המלאה מחכה באפליקציה."),
+              "_blank", "noopener")}><Calendar size={14} /> הוסף ליומן</button>
             <button style={btn(true, true)}><FileText size={14} /> דף מוכן לרופא</button>
           </div>
         </Card>
@@ -2005,10 +2000,10 @@ function HelpChat({ onClose }) {
     setBusy(false);
   };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", justifyContent: "center",
+    <div className="helpWrap" style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", justifyContent: "center",
       background: C.bg }} dir="rtl">
-      <div className="fadeIn" style={{ width: "100%", maxWidth: 420, background: C.paper, display: "flex",
-        flexDirection: "column", height: "100%" }}>
+      <div className="fadeIn helpCard" style={{ width: "100%", maxWidth: 420, background: C.paper, display: "flex",
+        flexDirection: "column", height: "100%", overflow: "hidden", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "15px 18px", borderBottom: `1px solid ${C.hair}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -2055,10 +2050,21 @@ function HelpChat({ onClose }) {
 }
 
 // ─── Shell ──────────────────────────────────────────────────
+function useDesk() {
+  const [d, setD] = useState(() => window.matchMedia("(min-width: 1060px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1060px)");
+    const fn = (e) => setD(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+  return d;
+}
 function App({ demoBanner }) {
   const [tab, setTab] = useState("home");
   const [selMarker, setSelMarker] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const desk = useDesk();
   const goTo = (t, marker) => { setTab(t); setSelMarker(marker ?? null); };
   const tabs = [
     { id: "home", label: "בית", ph: "house" },
@@ -2067,6 +2073,25 @@ function App({ demoBanner }) {
     { id: "habits", label: "הרגלים", ph: "leaf" },
     { id: "tips", label: "טיפים", ph: "lightbulb" },
   ];
+  const screen = (
+    <>
+      {tab === "home" && <Home goTo={goTo} />}
+      {tab === "markers" && <Markers selected={selMarker} setSelected={setSelMarker} goTo={goTo} />}
+      {tab === "upload" && <Upload />}
+      {tab === "habits" && <Habits goTo={goTo} />}
+      {tab === "tips" && <Tips />}
+    </>
+  );
+  const banner = demoBanner ? (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+      background: `${C.hi}12`, borderBottom: `1px solid ${C.hi}33`, padding: "7px 14px",
+      fontSize: 12, color: C.hi, fontWeight: 600 }}>
+      מצב הדגמה · נתונים לדוגמה
+      <button onClick={() => location.reload()} style={{ background: "none", border: `1px solid ${C.hi}55`,
+        borderRadius: 20, color: C.hi, fontSize: 11.5, fontWeight: 700, padding: "2px 10px",
+        cursor: "pointer", fontFamily: "inherit" }}>לכניסה</button>
+    </div>
+  ) : null;
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: C.bg, display: "flex", justifyContent: "center",
       fontFamily: "'Heebo', sans-serif", color: C.ink }}>
@@ -2077,24 +2102,62 @@ function App({ demoBanner }) {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(7px) } to { opacity: 1; transform: none } }
         .fadeIn { animation: fadeIn .3s cubic-bezier(.2,.7,.3,1) }
         @keyframes glowPulse { 0%,100% { opacity: .16 } 50% { opacity: .45 } }
-        .glowPulse { animation: glowPulse 2.6s ease-in-out infinite }`}</style>
-      <div style={{ width: "100%", maxWidth: 420, background: C.paper, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        {demoBanner && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            background: `${C.hi}12`, borderBottom: `1px solid ${C.hi}33`, padding: "7px 14px",
-            fontSize: 12, color: C.hi, fontWeight: 600 }}>
-            מצב הדגמה · נתונים לדוגמה
-            <button onClick={() => location.reload()} style={{ background: "none", border: `1px solid ${C.hi}55`,
-              borderRadius: 20, color: C.hi, fontSize: 11.5, fontWeight: 700, padding: "2px 10px",
-              cursor: "pointer", fontFamily: "inherit" }}>לכניסה</button>
+        .glowPulse { animation: glowPulse 2.6s ease-in-out infinite }
+        .homeCards { margin-top: -34px; position: relative; display: flex; flex-direction: column; gap: 12px }
+        @media (min-width: 1060px) {
+          .homeCards { display: grid; grid-template-columns: 1fr 1fr; align-items: start }
+          .homeCards > :first-child { grid-column: 1 / -1 }
+          .helpWrap { background: rgba(6,11,20,.62) !important; backdrop-filter: blur(6px); align-items: center }
+          .helpCard { max-height: min(78vh, 680px); border-radius: 24px; border: 1px solid ${C.line}; max-width: 460px !important }
+        }`}</style>
+      {desk ? (
+        <div style={{ width: "100%", maxWidth: 1180, display: "flex", alignItems: "stretch", minHeight: "100vh" }}>
+          <aside style={{ width: 234, flexShrink: 0, borderInlineEnd: `1px solid ${C.hair}`,
+            background: C.paper, display: "flex", flexDirection: "column",
+            padding: "30px 16px 26px", boxSizing: "border-box", position: "sticky", top: 0, height: "100vh" }}>
+            <div style={{ padding: "0 10px 24px" }}><BrandLockup dark /></div>
+            {tabs.filter((t) => t.id !== "upload").map(({ id, label, ph }) => (
+              <button key={id} onClick={() => goTo(id)}
+                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "start",
+                  background: tab === id ? "rgba(62,201,184,0.10)" : "none",
+                  border: "none", borderRadius: 14, padding: "12px 14px", cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 14.5, marginTop: 3,
+                  color: tab === id ? C.hi : C.soft, fontWeight: tab === id ? 700 : 500 }}>
+                <Ph name={ph} size={20} /> {label}
+                {id === "tips" && tab !== "tips" && <span style={{ width: 7, height: 7, borderRadius: 4,
+                  background: C.hi, boxShadow: `0 0 6px ${C.hi}`, marginInlineStart: "auto" }} />}
+              </button>
+            ))}
+            <button onClick={() => goTo("upload")}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, width: "100%",
+                marginTop: 18, padding: "13px 0", border: "none", borderRadius: 16, cursor: "pointer",
+                fontFamily: "inherit", fontSize: 14.5, fontWeight: 700, color: "#0A2620",
+                background: "linear-gradient(140deg, #5BD6E0 0%, #2EC49A 55%, #1C8A72 100%)",
+                boxShadow: "0 7px 18px rgba(46,196,154,.25)" }}>
+              <Ph name="camera" size={19} color="#0A2620" /> העלאת בדיקה</button>
+            <div style={{ flex: 1 }} />
+            <button onClick={() => setHelpOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", background: "none",
+                border: `1px solid ${C.line}`, borderRadius: 14, padding: "11px 14px", cursor: "pointer",
+                fontFamily: "inherit", fontSize: 13.5, color: C.soft }}>
+              <Ph name="chat-circle-dots" size={18} color={C.hi} /> עזרה ותמיכה</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: C.muted,
+              padding: "14px 6px 0" }}>
+              <Stethoscope size={13} color={C.hi} /> בליווי קליני של ד״ר דן קרת</div>
+          </aside>
+          <div style={{ flex: 1, minWidth: 0, background: C.paper, display: "flex", flexDirection: "column" }}>
+            {banner}
+            <main style={{ flex: 1, width: "100%", maxWidth: 760, margin: "0 auto", boxSizing: "border-box",
+              padding: "18px 16px 70px" }}>
+              {screen}
+            </main>
           </div>
-        )}
+        </div>
+      ) : (
+      <div style={{ width: "100%", maxWidth: 420, background: C.paper, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        {banner}
         <main style={{ flex: 1, padding: "18px 16px 100px", overflowY: "auto" }}>
-          {tab === "home" && <Home goTo={goTo} />}
-          {tab === "markers" && <Markers selected={selMarker} setSelected={setSelMarker} goTo={goTo} />}
-          {tab === "upload" && <Upload />}
-          {tab === "habits" && <Habits goTo={goTo} />}
-          {tab === "tips" && <Tips />}
+          {screen}
         </main>
         {!helpOpen && (
           <button onClick={() => setHelpOpen(true)} aria-label="עזרה"
@@ -2104,7 +2167,6 @@ function App({ demoBanner }) {
               display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Ph name="chat-circle-dots" size={20} color={C.hi} /></button>
         )}
-        {helpOpen && <HelpChat onClose={() => setHelpOpen(false)} />}
         <nav style={{ position: "fixed", bottom: 0, width: "100%", maxWidth: 420, background: "rgba(12,19,32,.94)",
           backdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`, display: "flex", padding: "9px 0 17px" }}>
           {tabs.map(({ id, label, ph }) => id === "upload" ? (
@@ -2134,6 +2196,8 @@ function App({ demoBanner }) {
           ))}
         </nav>
       </div>
+      )}
+      {helpOpen && <HelpChat onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }
