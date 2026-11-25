@@ -280,13 +280,13 @@ const DocBadge = ({ style }) => (
   </div>
 );
 
-// רשימת הבדיקות המומלצות למי שעוד אין לו תוצאות ביד
+// רשימת הבדיקות המומלצות - מדורגת לפי מה שבאמת מקבלים בקופה
 const TEST_LIST = {
-  base: ["גלוקוז בצום", "המוגלובין מסוכרר (HbA1c)", "פרופיל שומנים מלא",
+  easy: ["גלוקוז בצום", "המוגלובין מסוכרר (HbA1c)", "פרופיל שומנים מלא",
     "תפקודי כבד (ALT, AST, GGT)", "קריאטינין ותפקודי כליה", "ספירת דם מלאה",
-    "TSH (בלוטת התריס)", "ויטמין D", "B12", "פריטין", "חומצה אורית", "hs-CRP (דלקת)"],
-  extra: ["אינסולין בצום - מאפשר לחשב תנגודת אינסולין", "ApoB - מנבא סיכון לבבי מדויק יותר מ-LDL",
-    "Lp(a) - מספיק פעם אחת בחיים"],
+    "TSH (בלוטת התריס)", "ויטמין D", "B12", "פריטין", "חומצה אורית", "CRP (דלקת)"],
+  ask: ["אינסולין בצום - הנימוק לרופא: בדיקת תנגודת אינסולין"],
+  priv: ["ApoB - מנבא סיכון לבבי מדויק יותר מ-LDL", "Lp(a) - מספיק פעם אחת בחיים"],
 };
 
 // ─── Data (unchanged from v3) ───────────────────────────────
@@ -890,8 +890,9 @@ function EmptyHome({ goTo }) {
   const [remAdded, setRemAdded] = useState(false);
   const n = PENDING_MARKERS.length;
   const copyList = () => {
-    const txt = "בדיקות דם - אופטימל\n\nפאנל בסיס:\n" + TEST_LIST.base.map((t) => "· " + t).join("\n") +
-      "\n\nשווה לבקש במיוחד:\n" + TEST_LIST.extra.map((t) => "· " + t).join("\n");
+    const txt = "בדיקות דם - אופטימל\n\nפאנל בסיס (בסל, מקבלים בקלות):\n" + TEST_LIST.easy.map((t) => "· " + t).join("\n") +
+      "\n\nשווה לבקש עם נימוק:\n" + TEST_LIST.ask.map((t) => "· " + t).join("\n") +
+      "\n\nבדרך כלל פרטי (לא חובה עכשיו):\n" + TEST_LIST.priv.map((t) => "· " + t).join("\n");
     navigator.clipboard?.writeText(txt).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
   };
   const addReminder = () => {
@@ -985,17 +986,25 @@ function EmptyHome({ goTo }) {
               <StepN n="2" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, lineHeight: 1.6, color: C.soft }}>
-                  <b style={{ color: C.ink }}>מבקשים מהרופא הפניה לבדיקות האלה</b> - רובן בפאנל השגרתי:</div>
+                  <b style={{ color: C.ink }}>מבקשים מהרופא הפניה</b> - את הבסיס הזה מקבלים בקלות, הוא בסל
+                  (ברוב הקופות אפשר לבקש את ההפניה גם דרך האפליקציה, בלי תור):</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 11 }}>
-                  {TEST_LIST.base.map((t) => (
+                  {TEST_LIST.easy.map((t) => (
                     <span key={t} style={{ fontSize: 11.5, color: C.soft, border: `1px solid ${C.line}`,
                       borderRadius: 20, padding: "4px 10px" }}>{t}</span>
                   ))}
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: C.hi, margin: "13px 0 7px" }}>שווה לבקש במיוחד:</div>
-                {TEST_LIST.extra.map((t) => (
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: C.hi, margin: "13px 0 5px" }}>שווה לבקש, עם נימוק:</div>
+                {TEST_LIST.ask.map((t) => (
                   <div key={t} style={{ fontSize: 12.5, color: C.soft, lineHeight: 1.7 }}>· {t}</div>
                 ))}
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: C.muted, margin: "11px 0 5px" }}>
+                  בדרך כלל לא בסל - עושים פרטי, ולא חובה עכשיו:</div>
+                {TEST_LIST.priv.map((t) => (
+                  <div key={t} style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.7 }}>· {t}</div>
+                ))}
+                <div style={{ fontSize: 12, color: C.soft, marginTop: 10, lineHeight: 1.6 }}>
+                  גם הבסיס לבדו נותן תמונה מצוינת להתחלה - אל תתעכב בגללן.</div>
                 <button onClick={copyList} style={{ ...btn(true, true), marginTop: 13 }}>
                   <Ph name={copied ? "check" : "copy"} size={14} /> {copied ? "הועתק - אפשר להדביק ולשמור" : "העתק את הרשימה"}</button>
               </div>
@@ -1010,7 +1019,7 @@ function EmptyHome({ goTo }) {
                 <div style={{ display: "flex", gap: 9, marginTop: 12, alignItems: "center" }}>
                   <input type="date" value={remDate} onChange={(e) => setRemDate(e.target.value)}
                     style={{ background: C.paper, border: `1.5px solid ${C.line}`, borderRadius: 12,
-                      padding: "9px 12px", fontSize: 13, color: C.ink, fontFamily: "inherit", outline: "none",
+                      padding: "9px 12px", fontSize: 16, color: C.ink, fontFamily: "inherit", outline: "none",
                       colorScheme: "dark" }} />
                   <button onClick={addReminder} style={{ ...btn(false, true), whiteSpace: "nowrap" }}>
                     <Ph name={remAdded ? "check" : "calendar-plus"} size={14} /> {remAdded ? "נשמר ליומן" : "תזכורת ליומן"}</button>
@@ -1743,7 +1752,7 @@ function Auth({ onDemo }) {
   const [err, setErr] = useState(null);
   const input = {
     width: "100%", boxSizing: "border-box", background: C.card, border: `1.5px solid ${C.line}`,
-    borderRadius: 14, padding: "13px 16px", fontSize: 15, color: C.ink, fontFamily: "inherit",
+    borderRadius: 14, padding: "13px 16px", fontSize: 16, color: C.ink, fontFamily: "inherit",
     outline: "none", textAlign: "center",
   };
   const send = async () => {
@@ -1765,7 +1774,8 @@ function Auth({ onDemo }) {
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", display: "flex",
         flexDirection: "column", padding: "0 26px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
         <Aura style={{ top: -60, left: -40 }} o={0.4} size={280} />
-        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column",
+          justifyContent: "flex-start", paddingTop: "max(42px, 9vh)" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 26 }}><BrandLockup dark /></div>
           <h1 style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 700, textAlign: "center",
             margin: "0 0 8px", lineHeight: 1.35 }}>
@@ -1819,7 +1829,7 @@ function Onboarding({ onDone }) {
   const [err, setErr] = useState(null);
   const input = {
     width: "100%", boxSizing: "border-box", background: C.card, border: `1.5px solid ${C.line}`,
-    borderRadius: 14, padding: "13px 16px", fontSize: 15, color: C.ink, fontFamily: "inherit",
+    borderRadius: 14, padding: "13px 16px", fontSize: 16, color: C.ink, fontFamily: "inherit",
     outline: "none",
   };
   const ok = name.trim().length >= 2 && !!sex;
@@ -1838,7 +1848,7 @@ function Onboarding({ onDone }) {
   return (
     <div dir="rtl" style={nightBg}>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", display: "flex", flexDirection: "column",
-        justifyContent: "center", padding: "40px 26px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
+        justifyContent: "flex-start", padding: "max(38px, 7vh) 26px 40px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
         <Aura style={{ top: -60, left: -40 }} o={0.4} size={280} />
         <div style={{ position: "relative" }} className="fadeIn">
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}><BrandLockup dark /></div>
