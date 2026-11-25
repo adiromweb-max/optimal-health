@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>אופטימל</title>
+<title>אופטימל - לגלות היום את מה שרופא יראה בעוד עשר שנים</title>
+<meta name="description" content="רפואה מונעת בפועל: מעקב רב-שנתי אחרי בדיקות הדם שלך מול הטווחים המיטביים, בליווי קליני של ד״ר דן קרת. לגלות היום את מה שרופא יראה בעוד עשר שנים.">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" rx="9" fill="%230D1524"/><path d="M 25.4 7.6 A 12.6 12.6 0 1 1 10.6 7.6" fill="none" stroke="%232EC49A" stroke-width="3" stroke-linecap="round"/><circle cx="10.6" cy="7.6" r="2.4" fill="%235BD6E0"/><circle cx="22.5" cy="15" r="1.8" fill="%235BD6E0"/><circle cx="17.8" cy="18.6" r="1.5" fill="%233CC9C0"/><circle cx="13.2" cy="21.8" r="1.2" fill="%232EC49A"/></svg>'>
 <style>
 @font-face {
@@ -518,6 +519,12 @@ let LIVE = false;           // true once live data is loaded
 
 const SB_URL = "https://uxgdffvovqtntwjywlsk.supabase.co";
 const SB_KEY = "sb_publishable_kzXi2Qrr3WZY2_f1b-KkQg_F8z-3WPE";
+const ADMIN_EMAILS = ["adialon27@gmail.com", "adiromweb@gmail.com"];
+// לכידת מקור הפניה (?ref=) - נשמר עד ההרשמה, גם אם נרשמים רק אחרי ימים
+try {
+  const _ref = new URLSearchParams(location.search).get("ref");
+  if (_ref) localStorage.setItem("opt_ref", _ref.slice(0, 40));
+} catch (e) {}
 const sb = (typeof supabase !== "undefined" && supabase?.createClient)
   ? supabase.createClient(SB_URL, SB_KEY) : null;
 
@@ -570,7 +577,8 @@ async function loadLive() {
   }));
   if (liveTips.length) TIPS = liveTips;
   PROFILE = { id: user.id, sex, name: pf.data?.name || (user.email || "").split("@")[0],
-    streak: pf.data?.streak_days ?? 0, onboarded: !!(pf.data?.name && pf.data?.sex) };
+    streak: pf.data?.streak_days ?? 0, onboarded: !!(pf.data?.name && pf.data?.sex),
+    approved: !!pf.data?.approved };
   HABITS_TODAY = {};
   (hl.data || []).forEach((h) => { HABITS_TODAY[h.habit] = +h.value; });
   LIVE = true;
@@ -1244,8 +1252,15 @@ function Habits({ goTo }) {
     <div className="fadeIn">
       <Label style={{ marginTop: 4 }}>בין בדיקה לבדיקה</Label>
       <h2 style={{ fontFamily: SERIF, fontSize: 27, margin: "6px 0 4px" }}>ההרגלים שלך</h2>
-      <p style={{ color: C.muted, fontSize: 13.5, margin: "0 0 16px", lineHeight: 1.6 }}>
+      <p style={{ color: C.muted, fontSize: 13.5, margin: "0 0 10px", lineHeight: 1.6 }}>
         כל הרגל כאן נבחר לפי המדדים שלך, ומקושר אליהם.</p>
+      <div style={{ display: "flex", gap: 9, alignItems: "flex-start", background: "rgba(62,201,184,0.07)",
+        border: `1px solid ${C.hi}33`, borderRadius: 14, padding: "11px 14px", margin: "0 0 16px" }}>
+        <Ph name="crystal-ball" size={17} color={C.hi} style={{ flexShrink: 0, marginTop: 1 }} />
+        <div style={{ fontSize: 12.5, color: C.soft, lineHeight: 1.6 }}>
+          <b style={{ color: C.ink }}>כל סימון מזין את הצפי שלך.</b> ככל שתסמן יותר, המערכת תדע להעריך
+          טוב יותר לאן המדדים שלך הולכים - ותראה את זה בבדיקה הבאה, במספרים.</div>
+      </div>
 
       <Card style={{ marginBottom: 12, position: "relative", overflow: "hidden" }}>
         <Aura style={{ top: -100, left: -70 }} o={0.3} size={190} />
@@ -1253,7 +1268,7 @@ function Habits({ goTo }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700 }}>גיוון צמחי השבוע</div>
-              <div style={{ fontSize: 12.5, color: C.muted, marginTop: 3 }}>אכלת סוג צמח חדש השבוע? לחץ פלוס. ירקות, פירות, קטניות, אגוזים ותבלינים - הכל נספר</div>
+              <div style={{ fontSize: 12.5, color: C.muted, marginTop: 3 }}>אכלת סוג צמח חדש השבוע? לחץ פלוס. ירקות, פירות, קטניות, אגוזים ותבלינים - הכל נספר. כל פלוס מחדד את צפי מדדי הדלקת שלך לבדיקה הבאה</div>
             </div>
             <div style={{ display: "flex", gap: 8, flex: "0 0 auto" }}>
               <button onClick={() => setPlants((p) => Math.max(0, p - 1))} disabled={plants === 0} aria-label="הורד צמח"
@@ -1809,11 +1824,11 @@ function Auth({ onDemo }) {
         <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column",
           justifyContent: "flex-start", paddingTop: "max(42px, 9vh)" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 26 }}><BrandLockup dark /></div>
-          <h1 style={{ fontFamily: SERIF, fontSize: 27, fontWeight: 700, textAlign: "center",
-            margin: "0 0 8px", lineHeight: 1.35 }}>
-            הבריאות שלך,<br /><span style={{ color: C.hi }}>שנים קדימה</span></h1>
+          <h1 style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 700, textAlign: "center",
+            margin: "0 0 8px", lineHeight: 1.4 }}>
+            לגלות היום את מה שרופא<br />יראה <span style={{ color: C.hi }}>בעוד עשר שנים</span></h1>
           <p style={{ textAlign: "center", color: C.muted, fontSize: 13.5, lineHeight: 1.65, margin: "0 0 16px" }}>
-            מעקב רב-שנתי אחרי בדיקות הדם שלך, מול הטווחים המיטביים - לא רק טווחי המעבדה.</p>
+            רפואה מונעת בפועל: מעקב רב-שנתי אחרי בדיקות הדם שלך, מול הטווחים המיטביים - לא רק טווחי המעבדה.</p>
           <DocBadge style={{ margin: "0 0 24px" }} />
           {stage === "email" ? (
             <div className="fadeIn">
@@ -1889,6 +1904,7 @@ function Onboarding({ onDone }) {
     const patch = { name: name.trim(), sex };
     const y = parseInt(year, 10);
     if (y >= 1920 && y <= 2015) patch.birth_year = y;
+    try { const r = localStorage.getItem("opt_ref"); if (r) patch.ref_code = r; } catch (e) {}
     const { error } = await sb.from("profiles").update(patch).eq("id", PROFILE.id);
     if (error) { setBusy(false); setErr("השמירה לא הצליחה - נסה שוב"); return; }
     try { await loadLive(); } catch (e) { console.warn("reload failed", e); }
@@ -1967,7 +1983,43 @@ function Root() {
   );
   if (!ready) return <Splash text="טוען את הנתונים שלך..." />;
   if (PROFILE && !PROFILE.onboarded && !obDone) return <Onboarding onDone={() => setObDone(true)} />;
-  return <App />;
+  const isAdmin = !!session?.user?.email && ADMIN_EMAILS.includes(session.user.email.toLowerCase());
+  if (PROFILE && !PROFILE.approved && !isAdmin) return <Waiting />;
+  return <App admin={isAdmin} />;
+}
+
+// ─── מסך המתנה לאישור (שלב ההשקה המדורגת) ────────────────────
+function Waiting() {
+  return (
+    <div dir="rtl" style={nightBg}>
+      <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", display: "flex", flexDirection: "column",
+        padding: "0 28px", boxSizing: "border-box", position: "relative", overflow: "hidden" }}>
+        <Aura style={{ top: -60, left: -40 }} o={0.4} size={280} />
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column",
+          justifyContent: "flex-start", paddingTop: "max(48px, 11vh)", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 26 }}><BrandLockup dark /></div>
+          <div style={{ width: 62, height: 62, borderRadius: 31, margin: "0 auto 18px",
+            border: `1.5px solid ${C.hi}55`, background: "rgba(62,201,184,0.10)",
+            display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ph name="hourglass-medium" size={28} color={C.hi} />
+          </div>
+          <h1 style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 700, margin: "0 0 10px", lineHeight: 1.4 }}>
+            נרשמת! החשבון שלך<br /><span style={{ color: C.hi }}>בדרך להיפתח</span></h1>
+          <p style={{ color: C.soft, fontSize: 14, lineHeight: 1.7, margin: "0 0 6px" }}>
+            אופטימל נפתחת בהדרגה כדי לשמור על רמת שירות גבוהה לכל משתמש.</p>
+          <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.7, margin: 0 }}>
+            נעדכן אותך במייל ברגע שהחשבון שלך ייפתח - בדרך כלל תוך זמן קצר.</p>
+          <DocBadge style={{ margin: "26px 0 0" }} />
+        </div>
+        <div style={{ position: "relative", paddingBottom: 34, textAlign: "center" }}>
+          <button onClick={() => sb.auth.signOut().then(() => location.reload())}
+            style={{ background: "none", border: "none", cursor: "pointer",
+              color: C.muted, fontSize: 13, fontFamily: "inherit", textDecoration: "underline" }}>
+            יציאה</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Help assistant (in-app support chat) ───────────────────
@@ -2051,6 +2103,138 @@ function HelpChat({ onClose }) {
   );
 }
 
+// ─── מסך ניהול (לעדי בלבד) ──────────────────────────────────
+function AdminScreen() {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [view, setView] = useState("users");
+  const load = async () => {
+    setErr(null);
+    try {
+      const { data: d, error } = await sb.functions.invoke("admin", { body: { action: "overview" } });
+      if (error || !d || d.error) setErr("טעינת הנתונים נכשלה");
+      else setData(d);
+    } catch (e) { setErr("טעינת הנתונים נכשלה"); }
+  };
+  useEffect(() => { load(); }, []);
+  const approve = async (uid, undo) => {
+    setBusyId(uid);
+    try {
+      await sb.functions.invoke("admin", { body: { action: undo ? "unapprove" : "approve", user_id: uid } });
+      await load();
+    } catch (e) {}
+    setBusyId(null);
+  };
+  const stat = (label, val, hot) => (
+    <Card style={{ padding: "13px 14px", textAlign: "center", flex: 1, minWidth: 90 }}>
+      <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: hot && val > 0 ? C.hi : C.ink }}>{val}</div>
+      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{label}</div>
+    </Card>
+  );
+  const fmtDate = (d) => new Date(d).toLocaleDateString("he-IL", { day: "numeric", month: "short" });
+  if (err) return (
+    <div className="fadeIn" style={{ textAlign: "center", paddingTop: 50 }}>
+      <div style={{ color: C.soft, fontSize: 14, marginBottom: 14 }}>{err}</div>
+      <button style={btn(false, true)} onClick={load}>נסה שוב</button>
+    </div>
+  );
+  if (!data) return <div className="glowPulse" style={{ textAlign: "center", paddingTop: 60, color: C.muted, fontSize: 14 }}>טוען נתוני ניהול...</div>;
+  const pending = data.users.filter((u) => !u.approved);
+  const refEntries = Object.entries(data.refStats || {});
+  return (
+    <div className="fadeIn">
+      <Label style={{ marginTop: 4 }}>ניהול אופטימל</Label>
+      <h2 style={{ fontFamily: SERIF, fontSize: 27, margin: "6px 0 14px" }}>תמונת מצב</h2>
+      <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginBottom: 16 }}>
+        {stat("נרשמים", data.stats.users)}
+        {stat("ממתינים לאישור", data.stats.pending, true)}
+        {stat("העלו בדיקות", data.stats.uploaded)}
+        {stat("מיילים נשלחו", data.stats.emails_sent)}
+        {stat("שאלות לעוזר", data.stats.questions)}
+      </div>
+
+      {pending.length > 0 && (
+        <Card style={{ marginBottom: 16, border: `1.5px solid ${C.hi}44` }}>
+          <Label>ממתינים לאישור ({pending.length})</Label>
+          {pending.map((u) => (
+            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 0",
+              borderBottom: `1px solid ${C.hair}` }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", direction: "ltr", textAlign: "right" }}>{u.email}</div>
+                <div style={{ fontSize: 11.5, color: C.muted, marginTop: 2 }}>
+                  {u.name || "ללא שם"} · {u.provider === "google" ? "Google" : "מייל"} · {fmtDate(u.created_at)}{u.ref ? ` · מקור: ${u.ref}` : ""}</div>
+              </div>
+              <button onClick={() => approve(u.id)} disabled={busyId === u.id}
+                style={{ ...btn(false, true), opacity: busyId === u.id ? 0.5 : 1 }}>
+                {busyId === u.id ? "..." : "אשר + שלח מייל"}</button>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      <div style={{ display: "flex", gap: 7, marginBottom: 12 }}>
+        {[["users", "משתמשים"], ["questions", "שאלות לעוזר"], ["refs", "מקורות הפניה"]].map(([k, lbl]) => (
+          <button key={k} onClick={() => setView(k)}
+            style={{ ...btn(view !== k, true), fontSize: 12.5,
+              ...(view === k ? {} : { color: C.muted }) }}>{lbl}</button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button onClick={load} aria-label="רענון" style={{ ...btn(true, true), padding: "8px 12px" }}>
+          <Ph name="arrows-clockwise" size={15} /></button>
+      </div>
+
+      {view === "users" && (
+        <Card>
+          {data.users.map((u) => (
+            <div key={u.id} style={{ padding: "11px 0", borderBottom: `1px solid ${C.hair}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
+                  textOverflow: "ellipsis", direction: "ltr", textAlign: "right" }}>{u.email}</div>
+                <span style={{ fontSize: 10.5, fontWeight: 700, borderRadius: 12, padding: "2px 9px",
+                  color: u.approved ? C.good : C.watch,
+                  background: u.approved ? C.goodBg : C.watchBg }}>
+                  {u.approved ? "מאושר" : "ממתין"}</span>
+              </div>
+              <div style={{ fontSize: 11.5, color: C.muted, marginTop: 3 }}>
+                {u.name || "ללא שם"} · {u.provider === "google" ? "Google" : "מייל"} · נרשם {fmtDate(u.created_at)} ·
+                {" "}{u.results > 0 ? `${u.results} תוצאות` : "עוד לא העלה"}{u.ref ? ` · מקור: ${u.ref}` : ""}
+                {u.emails.length ? ` · מיילים: ${u.emails.join(", ")}` : ""}</div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {view === "questions" && (
+        <Card>
+          {!data.questions.length && <div style={{ color: C.muted, fontSize: 13, padding: "8px 0" }}>עוד אין שאלות</div>}
+          {data.questions.map((q, i) => (
+            <div key={i} style={{ padding: "11px 0", borderBottom: `1px solid ${C.hair}` }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{q.q}</div>
+              <div style={{ fontSize: 12.5, color: C.soft, marginTop: 4, lineHeight: 1.55 }}>{q.a}</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{q.who} · {q.day}</div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {view === "refs" && (
+        <Card>
+          {!refEntries.length && <div style={{ color: C.muted, fontSize: 13, padding: "8px 0" }}>
+            עוד אין נרשמים דרך קישורי הפניה. קישור לדוגמה: optimal.a-webm.com/?ref=dr-keret</div>}
+          {refEntries.map(([ref, s]) => (
+            <div key={ref} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 0",
+              borderBottom: `1px solid ${C.hair}` }}>
+              <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600 }}>{ref}</div>
+              <div style={{ fontSize: 12, color: C.muted }}>{s.signups} נרשמו · {s.uploaded} העלו</div>
+            </div>
+          ))}
+        </Card>
+      )}
+    </div>
+  );
+}
+
 // ─── Shell ──────────────────────────────────────────────────
 function useDesk() {
   const [d, setD] = useState(() => window.matchMedia("(min-width: 1060px)").matches);
@@ -2062,7 +2246,7 @@ function useDesk() {
   }, []);
   return d;
 }
-function App({ demoBanner }) {
+function App({ demoBanner, admin }) {
   const [tab, setTab] = useState("home");
   const [selMarker, setSelMarker] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -2074,6 +2258,7 @@ function App({ demoBanner }) {
     { id: "upload", label: "העלאה", ph: "camera" },
     { id: "habits", label: "הרגלים", ph: "leaf" },
     { id: "tips", label: "טיפים", ph: "lightbulb" },
+    ...(admin ? [{ id: "admin", label: "ניהול", ph: "gear" }] : []),
   ];
   const screen = (
     <>
@@ -2082,6 +2267,7 @@ function App({ demoBanner }) {
       {tab === "upload" && <Upload />}
       {tab === "habits" && <Habits goTo={goTo} />}
       {tab === "tips" && <Tips />}
+      {tab === "admin" && admin && <AdminScreen />}
     </>
   );
   const banner = demoBanner ? (
